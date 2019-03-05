@@ -71,7 +71,9 @@
 #include <ARUtil/time.h>
 
 #define             VPARA_NAME       "Data/cameraSetting-%08x%08x.dat"
-#define             PATT_NAME        "Data/hiro.patt"
+#define             PATT_NAME        "Data/tyr"
+#define             PATT_NAME2       "Data/fleet"
+#define             PATT_NAME3       "Data/hiro"
 
 ARHandle           *arHandle;
 ARPattHandle       *arPattHandle;
@@ -79,7 +81,7 @@ AR3DHandle         *ar3DHandle;
 ARGViewportHandle  *vp;
 int                 xsize, ysize;
 int                 flipMode = 0;
-int                 patt_id;
+//int                 patt_id;
 double              patt_width = 80.0;
 int                 count = 0;
 char                fps[256];
@@ -94,8 +96,22 @@ static void   cleanup(void);
 static void   mainLoop(void);
 static void   draw( ARdouble trans[3][4] );
 
+
+struct mark{
+    int patt_id;
+    ARdouble patt_trans[3][4];
+    //ARMarkerInfo   *markerInfo;
+    int             markerNum;
+    
+};
+
+struct mark spot[3];
+
 int main(int argc, char *argv[])
 {
+    
+        //mark[0]
+    
 	glutInit(&argc, argv);
     init(argc, argv);
 
@@ -180,8 +196,10 @@ static void keyFunc( unsigned char key, int x, int y )
 
 static void mainLoop(void)
 {
+
+    
     static int      contF2 = 0;
-    static ARdouble patt_trans[3][4];
+    //static ARdouble patt_trans[3][4];
     static AR2VideoBufferT *buff = NULL;
     ARMarkerInfo   *markerInfo;
     int             markerNum;
@@ -213,6 +231,11 @@ static void mainLoop(void)
     }
 
     /* detect the markers in the video frame */
+    
+    //for(int i = 0 ; i < 3; i++)
+    //int i = 0 ;
+    {
+    
     if (arDetectMarker(arHandle, buff) < 0) {
         cleanup();
         exit(0);
@@ -227,44 +250,59 @@ static void mainLoop(void)
     argDrawStringsByIdealPos(fps, 10, ysize-30);
 
     markerNum = arGetMarkerNum( arHandle );
+    //printf("--------------------------------- %d\n",markerNum);
     if( markerNum == 0 ) {
         argSwapBuffers();
         return;
     }
 
     /* check for object visibility */
-    markerInfo =  arGetMarker( arHandle ); 
-    k = -1;
-    for( j = 0; j < markerNum; j++ ) {
-        ARLOG("ID=%d, CF = %f\n", markerInfo[j].id, markerInfo[j].cf);
-        if( patt_id == markerInfo[j].id ) {
-            if( k == -1 ) {
-                if (markerInfo[j].cf >= 0.7) k = j;
-            } else if( markerInfo[j].cf > markerInfo[k].cf ) k = j;
+
+        printf("%d %d %d\n",spot[0].patt_id,spot[1].patt_id,spot[2].patt_id);
+        for(int i = 0 ; i < 3; i++){
+        markerInfo =  arGetMarker( arHandle ); 
+        k = -1;
+        for( j = 0; j < markerNum; j++ ) {
+            for(int i = 0 ; i < 3; i++){
+            ARLOG("ID=%d, CF = %f\n", markerInfo[j].id, markerInfo[j].cf);
+            
+                if( spot[i].patt_id == markerInfo[j].id ) {
+                    if( k == -1 ) {
+                        if (markerInfo[j].cf >= 0.7) k = j;
+                    } else if( markerInfo[j].cf > markerInfo[k].cf ) k = j;
+                }
+            }
         }
-    }
-    if( k == -1 ) {
-        contF2 = 0;
+        
+        if( k == -1 ) {
+            contF2 = 0;
+            argSwapBuffers();
+            return;
+        }
+        
+        for(int i = 0 ; i < 3; i++){
+            if( contF && contF2 ) {
+                
+                err = arGetTransMatSquareCont(ar3DHandle, &(markerInfo[k]), spot[i].patt_trans, patt_width, spot[i].patt_trans);
+            }
+            else {
+                
+                err = arGetTransMatSquare(ar3DHandle, &(markerInfo[k]), patt_width, spot[i].patt_trans);
+            }
+        }
+        sprintf(errValue, "err = %f", err);
+        glColor3f(0.0f, 1.0f, 0.0f);
+        argDrawStringsByIdealPos(fps, 10, ysize-30);
+        argDrawStringsByIdealPos(errValue, 10, ysize-60);
+        //ARLOG("err = %f\n", err);
+
+        contF2 = 1;
+        for(int i = 0 ; i < 3; i++)
+            draw(spot[i].patt_trans);}
+
         argSwapBuffers();
-        return;
     }
-
-    if( contF && contF2 ) {
-        err = arGetTransMatSquareCont(ar3DHandle, &(markerInfo[k]), patt_trans, patt_width, patt_trans);
-    }
-    else {
-        err = arGetTransMatSquare(ar3DHandle, &(markerInfo[k]), patt_width, patt_trans);
-    }
-    sprintf(errValue, "err = %f", err);
-    glColor3f(0.0f, 1.0f, 0.0f);
-    argDrawStringsByIdealPos(fps, 10, ysize-30);
-    argDrawStringsByIdealPos(errValue, 10, ysize-60);
-    //ARLOG("err = %f\n", err);
-
-    contF2 = 1;
-    draw(patt_trans);
-
-    argSwapBuffers();
+    
 }
 
 static void   init(int argc, char *argv[])
@@ -335,7 +373,17 @@ static void   init(int argc, char *argv[])
         ARLOGe("Error: arPattCreateHandle.\n");
         exit(0);
     }
-    if( (patt_id=arPattLoad(arPattHandle, PATT_NAME)) < 0 ) {
+    if( (spot[0].patt_id=arPattLoad(arPattHandle, PATT_NAME)) < 0 ) {
+        ARLOGe("pattern load error !!\n");
+        exit(0);
+    }
+    
+    if( (spot[1].patt_id=arPattLoad(arPattHandle, PATT_NAME2)) < 0 ) {
+        ARLOGe("pattern load error !!\n");
+        exit(0);
+    }
+    
+    if( (spot[2].patt_id=arPattLoad(arPattHandle, PATT_NAME3)) < 0 ) {
         ARLOGe("pattern load error !!\n");
         exit(0);
     }
