@@ -94,7 +94,7 @@ static void   init(int argc, char *argv[]);
 static void   keyFunc( unsigned char key, int x, int y );
 static void   cleanup(void);
 static void   mainLoop(void);
-static void   draw( ARdouble trans[3][4] );
+static void   draw( void );
 
 
 struct mark{
@@ -102,6 +102,7 @@ struct mark{
     ARdouble patt_trans[3][4];
     //ARMarkerInfo   *markerInfo;
     int             markerNum;
+    int found ;
     
 };
 
@@ -259,34 +260,35 @@ static void mainLoop(void)
     /* check for object visibility */
 
         printf("%d %d %d\n",spot[0].patt_id,spot[1].patt_id,spot[2].patt_id);
-        for(int i = 0 ; i < 3; i++){
+
+        
         markerInfo =  arGetMarker( arHandle ); 
-        k = -1;
+       k = -1;
+		  int i = 0 ;
+	for(i = 0 ; i < 3; i++){
+	  k = -1;
+	  	      spot[i].found = -1;
         for( j = 0; j < markerNum; j++ ) {
-            for(int i = 0 ; i < 3; i++){
+// 
+        
             ARLOG("ID=%d, CF = %f\n", markerInfo[j].id, markerInfo[j].cf);
             
                 if( spot[i].patt_id == markerInfo[j].id ) {
                     if( k == -1 ) {
-                        if (markerInfo[j].cf >= 0.7) k = j;
+                        if (markerInfo[j].cf >= 0.1) {
+			  k = j;
+			  }
                     } else if( markerInfo[j].cf > markerInfo[k].cf ) k = j;
                 }
             }
-        }
+        printf("----------------------------------------------------------------------------------[ %d\n",k);
         
-        if( k == -1 ) {
-            contF2 = 0;
-            argSwapBuffers();
-            return;
-        }
+
+	
+     if( k > -1 )
         
-        for(int i = 0 ; i < 3; i++){
-            if( contF && contF2 ) {
-                
-                err = arGetTransMatSquareCont(ar3DHandle, &(markerInfo[k]), spot[i].patt_trans, patt_width, spot[i].patt_trans);
-            }
-            else {
-                
+           {
+                 spot[i].found = 1;
                 err = arGetTransMatSquare(ar3DHandle, &(markerInfo[k]), patt_width, spot[i].patt_trans);
             }
         }
@@ -297,8 +299,8 @@ static void mainLoop(void)
         //ARLOG("err = %f\n", err);
 
         contF2 = 1;
-        for(int i = 0 ; i < 3; i++)
-            draw(spot[i].patt_trans);}
+        //for(int i = 0 ; i < 3; i++)
+            draw();
 
         argSwapBuffers();
     }
@@ -428,7 +430,7 @@ static void cleanup(void)
     arVideoClose();
 }
 
-static void draw( ARdouble trans[3][4] )
+static void draw( void )
 {
     ARdouble  gl_para[16];
     GLfloat   mat_diffuse[]     = {0.0f, 0.0f, 1.0f, 0.0f};
@@ -445,14 +447,9 @@ static void draw( ARdouble trans[3][4] )
     glDepthFunc(GL_LEQUAL);
     
     /* load the camera transformation matrix */
-    argConvGlpara(trans, gl_para);
-    glMatrixMode(GL_MODELVIEW);
-#ifdef ARDOUBLE_IS_FLOAT
-    glLoadMatrixf( gl_para );
-#else
-    glLoadMatrixd( gl_para );
-#endif
-
+    int i = 0;
+        glMatrixMode(GL_MODELVIEW);
+	
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, 1);
@@ -464,16 +461,37 @@ static void draw( ARdouble trans[3][4] )
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_flash_shiny);	
     glMaterialfv(GL_FRONT, GL_DIFFUSE,   mat_diffuse);
     glMaterialfv(GL_FRONT, GL_AMBIENT,   mat_diffuse);
+    
+    for ( i=0; i < 3 ; i++){
+	    //trans = spot[i].patt_trans;
+	      printf("found ::: %d %d %d", spot[0].found,spot[1].found,spot[2].found);
+	      if(spot[i].found == 1){
+	    argConvGlpara(spot[i].patt_trans, gl_para);
+	    //glMatrixMode(GL_MODELVIEW);
 
-#if 1
-    glTranslatef( 0.0f, 0.0f, 40.0f );
-    glutSolidCube(80.0);
-#else
-    glTranslatef( 0.0f, 0.0f, 20.0f );
-    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-    glutSolidTeapot(40.0);
-#endif
-    glDisable(GL_LIGHT0);
+	#ifdef ARDOUBLE_IS_FLOAT
+	    glLoadMatrixf( gl_para );
+	#else
+	    glLoadMatrixd( gl_para );
+	#endif
+
+	    
+	    glutSolidCube(80.0);
+
+	#if 1
+	    glTranslatef( 0.0f, 0.0f, 40.0f );
+	    glutSolidCube(80.0);
+	#else
+	    glTranslatef( 0.0f, 0.0f, 20.0f );
+	    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+	    glutSolidTeapot(40.0);
+	#endif
+
+	      
+	    }
+
+    }
+        glDisable(GL_LIGHT0);
     glDisable( GL_LIGHTING );
 
     glDisable( GL_DEPTH_TEST );
