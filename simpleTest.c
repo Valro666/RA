@@ -70,6 +70,7 @@
 #include <AR/video.h>
 #include <ARUtil/time.h>
 
+
 #define             VPARA_NAME       "Data/cameraSetting-%08x%08x.dat"
 #define             PATT_NAME        "Data/tyr"
 #define             PATT_NAME2       "Data/fleet"
@@ -281,7 +282,7 @@ static void mainLoop(void)
                     } else if( markerInfo[j].cf > markerInfo[k].cf ) k = j;
                 }
             }
-        printf("----------------------------------------------------------------------------------[ %d\n",k);
+        //printf("----------------------------------------------------------------------------------[ %d\n",k);
         
 
 	
@@ -464,32 +465,102 @@ static void draw( void )
     
     for ( i=0; i < 3 ; i++){
 	    //trans = spot[i].patt_trans;
-	      printf("found ::: %d %d %d", spot[0].found,spot[1].found,spot[2].found);
+	      printf("found ::: %d %d %d\n", spot[0].found,spot[1].found,spot[2].found);
 	      if(spot[i].found == 1){
 	    argConvGlpara(spot[i].patt_trans, gl_para);
 	    //glMatrixMode(GL_MODELVIEW);
 
+	    
 	#ifdef ARDOUBLE_IS_FLOAT
 	    glLoadMatrixf( gl_para );
 	#else
 	    glLoadMatrixd( gl_para );
-	#endif
-
+#endif
 	    
-	    glutSolidCube(80.0);
-
-	#if 1
-	    glTranslatef( 0.0f, 0.0f, 40.0f );
-	    glutSolidCube(80.0);
-	#else
-	    glTranslatef( 0.0f, 0.0f, 20.0f );
-	    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-	    glutSolidTeapot(40.0);
-	#endif
-
+	    glutSolidCube(20.0);
 	      
 	    }
+	    
+	    printf("--------------------------------------------------\n");
+	    int a = 0 ;
+	    int b = 0 ;
+	    for(a = 0 ; a < 3 ; a ++){
+	      for(b = 0 ; b < 4 ; b ++){
+			    printf("%f ", spot[i].patt_trans[a][b]);
+	      }
+	      printf("\n");
+	    }
 
+
+	    
+
+    }
+    
+    
+    if(spot[0].found == 1){
+	if(spot[1].found==1){
+	  printf("ouiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\n");
+	  double xa = spot[0].patt_trans[0][3];
+	  double ya = spot[0].patt_trans[1][3];
+	  double za = spot[0].patt_trans[2][3];
+	  
+	  double tx = 100;
+	  double ty = 100;
+	  double tz = 0;
+	  double xb = spot[1].patt_trans[0][3];
+	  double yb = spot[1].patt_trans[1][3];
+	  double zb = spot[1].patt_trans[2][3];  
+	  printf("%lf %lf %lf \n",xa,ya,za);
+	  
+	  xa = spot[1].patt_trans[0][0]*tx + spot[1].patt_trans[0][1]*ty+spot[1].patt_trans[0][2]*tz+xa;
+	  ya = spot[1].patt_trans[1][0]*tx + spot[1].patt_trans[1][1]*ty+spot[1].patt_trans[1][2]*tz+ya;
+	  za = spot[1].patt_trans[2][0]*tx + spot[1].patt_trans[2][1]*ty+spot[1].patt_trans[2][2]*tz+za;
+	  
+	  //xa = xa + tx;
+	  //ya = ya + ty;
+	  //za = za + tz;
+	  
+	  
+	  
+	  
+	  printf("%lf %lf %lf \n",xa,ya,za);
+	  
+	  double d = (xa-xb)*(xa-xb)+(ya-yb)*(ya-yb)+(za-zb)*(za-zb);
+	  d = sqrt(d);
+	  //d = d *100;
+	  printf("dddddddddddddddddddddddddddddddddddddddddddddddddddddd --->  %f\n",d);
+	  // d en mm
+	  if(d>10){    
+
+	    argConvGlpara(spot[0].patt_trans, gl_para);
+	    glLoadMatrixd( gl_para );
+	
+	    glutSolidCube(40.0);
+
+	        
+
+	    argConvGlpara(spot[1].patt_trans, gl_para);    
+	    glLoadMatrixd( gl_para );
+	
+	    	    glutSolidCube(40.0);
+	    glTranslated(tx,ty,tz);
+	    glutSolidCube(40.0);
+
+	  }else{
+	    argConvGlpara(spot[0].patt_trans, gl_para);
+	    glLoadMatrixd( gl_para );
+	
+	    glutWireCube(40.0);
+	    glTranslated(tx,ty,tz);
+	    glutWireCube(40.0);
+	    
+	    argConvGlpara(spot[1].patt_trans, gl_para);
+	    glLoadMatrixd( gl_para );
+	    glutWireCube(40.0);
+
+	  }
+	  
+	}
     }
         glDisable(GL_LIGHT0);
     glDisable( GL_LIGHTING );
